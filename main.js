@@ -48,22 +48,65 @@ loader.load('assets/charactor-with-animations.glb', function (gltf) {
     mixer = new THREE.AnimationMixer(character);
     actions['stationary'] = mixer.clipAction(gltf.animations[3]);
     actions['walking'] = mixer.clipAction(gltf.animations[1]);
+    actions['hit'] = mixer.clipAction(gltf.animations[4]);
+    actions['hit'].setLoop(THREE.LoopOnce);
+    actions['hit'].clampWhenFinished = true;
+    
   }
   activeAction = actions['stationary'];
   if (activeAction) activeAction.play();
+
+  mixer.addEventListener('finished', function (e) {
+    if (e.action === actions['hit']) {
+      keys.space = false;
+    }
+  });
 },
   undefined, function (error) {
     console.error("Error loading GLTF model:", error);
   }
 );
-
-let isKeyPressed = false;
-window.addEventListener('keydown', () => {
-  isKeyPressed = true;
+const keys = {
+  space: false,
+  forward: false,
+  backward: false,
+  left: false,
+  right: false
+}
+window.addEventListener('keydown', (e) => {
+  if (e.code === "Space") {
+    keys.space = true;
+  }
+  if (e.key === "w" || e.code == "ArrowUp" || e.key === "W") {
+    keys.forward = true;
+  }
+  if (e.key === "s" || e.code == "ArrowDown" || e.key === "S") {
+    keys.backward = true;
+  }
+  if (e.key === "a" || e.code == "ArrowLeft" || e.key === "A") {
+    keys.left = true;
+  }
+  if (e.key === "d" || e.code == "ArrowRight" || e.key === "D") {
+    keys.right = true;
+  }
+  if(keys.right || keys.left || keys.forward || keys.backward){
+    keys.space = false;
+  }
 });
 
-window.addEventListener('keyup', () => {
-  isKeyPressed = false;
+window.addEventListener('keyup', (e) => {
+  if (e.key === "w" || e.code == "ArrowUp" || e.key === "W") {
+    keys.forward = false;
+  }
+  if (e.key === "s" || e.code == "ArrowDown" || e.key === "S") {
+    keys.backward = false;
+  }
+  if (e.key === "a" || e.code == "ArrowLeft" || e.key === "A") {
+    keys.left = false;
+  }
+  if (e.key === "d" || e.code == "ArrowRight" || e.key === "D") {
+    keys.right = false;
+  }
 });
 
 function fadeToAction(name, duration = 0.2) {
@@ -80,33 +123,53 @@ const moveSpeed = 5.0;
 const moveDirection = new THREE.Vector3();
 const targetCameraPos = new THREE.Vector3();
 
-function updateCharacter(delta) {
+function updateCharacter(delta, keys) {
   if (!character) return;
-
   moveDirection.set(0, 0, 0);
-
-  if (isKeyPressed) {
+  if (keys.space) {
+    fadeToAction('hit');
+  } else if (keys.forward || keys.backward || keys.left || keys.right) {
     fadeToAction('walking');
-    moveDirection.z -= 1;
+    moveCharacter(keys);
     character.position.addScaledVector(moveDirection, moveSpeed * delta);
   } else {
     fadeToAction('stationary');
   }
+  updateCamera();
+}
 
+function updateCamera() {
   targetCameraPos.set(
     character.position.x,
     character.position.y + 2,
-    character.position.z + 4
+    character.position.z + 7
   );
-  camera.position.lerp(targetCameraPos, 0.1);
+  camera.position.lerp(targetCameraPos, 0.05);
   camera.lookAt(character.position.x, character.position.y + 2, character.position.z);
-
 }
 
+function moveCharacter(keys) {
+  if (keys.forward) {
+    character.rotation.y = Math.PI;
+    moveDirection.z -= 1;
+  }
+  if (keys.backward) {
+    character.rotation.y = 0;
+    moveDirection.z += 1;
+  }
+  if (keys.left) {
+    character.rotation.y = -Math.PI / 2;
+    moveDirection.x -= 1;
+  }
+  if (keys.right) {
+    character.rotation.y = Math.PI / 2;
+    moveDirection.x += 1;
+  }
+}
 function animate() {
   const delta = clock.getDelta();
   if (mixer) mixer.update(delta);
-  updateCharacter(delta);
+  updateCharacter(delta, keys);
 
   renderer.render(scene, camera);
 }
