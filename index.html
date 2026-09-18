@@ -5,24 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Three.js App</title>
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    html,
-    body {
-      width: 100%;
-      height: 100%;
-      background: #111;
-    }
-
-    canvas {
-      display: block;
-    }
-  </style>
+  <link rel="stylesheet" href="styles.css">
   <script type="importmap">
   {
     "imports": {
@@ -34,6 +17,14 @@
 </head>
 
 <body>
+  <div class="controls">
+    <h3>CONTROLS</h3>
+    <p><span>Forward: </span> <kbd>W</kbd> / <kbd>↑</kbd></p>
+    <p><span>Backward: </span> <kbd>S</kbd> / <kbd>↓</kbd></p>
+    <p><span>Left: </span> <kbd>A</kbd> / <kbd>←</kbd></p>
+    <p><span>Right: </span> <kbd>D</kbd> / <kbd>→</kbd></p>
+    <p><span>Hit: </span> <kbd>Space</kbd></p>
+  </div>
   <div id="container"></div>
   <script type="module" src="main.js"></script>
 </body>
