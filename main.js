@@ -19,6 +19,33 @@ container.appendChild(renderer.domElement);
 // OrbitControls
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.target.set(0, 2, 0);
+
+let isPointerLocked = false;
+const spherical = new THREE.Spherical();
+
+renderer.domElement.addEventListener('click', () => {
+  if (!isPointerLocked) {
+    renderer.domElement.requestPointerLock();
+  }
+});
+
+document.addEventListener('pointerlockchange', () => {
+  isPointerLocked = (document.pointerLockElement === renderer.domElement);
+  controls.enabled = !isPointerLocked;
+});
+
+document.addEventListener('mousemove', (e) => {
+  if (isPointerLocked) {
+    const move = camera.position.clone().sub(controls.target);
+    spherical.setFromVector3(move);
+    spherical.theta -= e.movementX * 0.002;
+    spherical.phi -= e.movementY * 0.002; 
+    move.setFromSpherical(spherical);
+    camera.position.copy(controls.target).add(move);
+    camera.lookAt(controls.target);
+  }
+});
+
 scene.background = new THREE.Color(0x87ceeb);
 
 // Ground Plane with Standard Material (responds to 3D lighting & shadows)
@@ -55,6 +82,7 @@ loader.load('assets/charactor-with-animations.glb', function (gltf) {
     mixer = new THREE.AnimationMixer(character);
     actions['stationary'] = mixer.clipAction(gltf.animations[3]);
     actions['walking'] = mixer.clipAction(gltf.animations[1]);
+    actions['running'] = mixer.clipAction(gltf.animations[2]);
     actions['hit'] = mixer.clipAction(gltf.animations[4]);
     actions['hit'].setLoop(THREE.LoopOnce);
     actions['hit'].clampWhenFinished = true;
@@ -78,7 +106,8 @@ const keys = {
   forward: false,
   backward: false,
   left: false,
-  right: false
+  right: false,
+  shift: false
 };
 
 window.addEventListener('keydown', (e) => {
@@ -97,9 +126,13 @@ window.addEventListener('keydown', (e) => {
   if (e.key === "d" || e.code == "ArrowRight" || e.key === "D") {
     keys.right = true;
   }
+  if ( e.key === "Shift" || e.key === "ShiftLeft" || e.key === "ShiftRight") {
+    keys.shift = true;
+  }
   if (keys.right || keys.left || keys.forward || keys.backward) {
     keys.space = false;
   }
+
 });
 
 window.addEventListener('keyup', (e) => {
@@ -114,6 +147,9 @@ window.addEventListener('keyup', (e) => {
   }
   if (e.key === "d" || e.code == "ArrowRight" || e.key === "D") {
     keys.right = false;
+  }
+  if ( e.key === "Shift" || e.key === "ShiftLeft" || e.key === "Shift Right") {
+    keys.shift = false;
   }
 });
 
@@ -136,7 +172,13 @@ function updateCharacter(delta, keys) {
   moveDirection.set(0, 0, 0);
   if (keys.space) {
     fadeToAction('hit');
-  } else if (keys.forward || keys.backward || keys.left || keys.right) {
+  }
+  else if (keys.shift && (keys.forward || keys.backward || keys.left || keys.right)) {
+    fadeToAction('running');
+    moveCharacter(keys, delta);
+    character.position.addScaledVector(moveDirection, moveSpeed * 3 * delta);
+  }
+  else if (keys.forward || keys.backward || keys.left || keys.right) {
     fadeToAction('walking');
     moveCharacter(keys, delta);
     character.position.addScaledVector(moveDirection, moveSpeed * delta);
